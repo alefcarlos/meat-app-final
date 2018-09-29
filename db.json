@@ -1,6 +1,16 @@
 {
   "restaurants": [
     {
+      "id": "afifood",
+      "name": "AfiFood",
+      "category": "Qualquer coisa",
+      "deliveryEstimate": "25m",
+      "rating": 4.9,
+      "imagePath": "",
+      "about": "Oi, eu sou o Goku !",
+      "hours": "Funciona de segunda à sexta, de 8h às 23h"
+    },
+    {
       "id": "bread-bakery",
       "name": "Bread & Bakery",
       "category": "Padaria",
