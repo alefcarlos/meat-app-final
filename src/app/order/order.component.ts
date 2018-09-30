@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import {FormGroup, FormBuilder, Validators, AbstractControl} from '@angular/forms'
+import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms'
 
-import {Router} from '@angular/router'
+import { Router } from '@angular/router'
 
-import {RadioOption} from '../shared/radio/radio-option.model'
-import {OrderService} from './order.service'
-import {CartItem} from '../restaurant-detail/shopping-cart/cart-item.model'
-import {Order, OrderItem} from "./order.model"
+import { RadioOption } from '../shared/radio/radio-option.model'
+import { OrderService } from './order.service'
+import { CartItem } from '../restaurant-detail/shopping-cart/cart-item.model'
+import { Order, OrderItem } from "./order.model"
 
 @Component({
   selector: 'mt-order',
@@ -18,19 +18,24 @@ export class OrderComponent implements OnInit {
 
   numberPattern = /^[0-9]*$/
 
+  creditCardExpirationPattern = /^[0-9]{2}\/[0-9]{2}$/
+
   orderForm: FormGroup
 
   delivery: number = 8
 
+  showCreditCardForm: boolean = false;
+
   paymentOptions: RadioOption[] = [
-    {label: 'Dinheiro', value: 'MON'},
-    {label: 'Cartão de Débito', value: 'DEB'},
-    {label: 'Cartão Refeição', value: 'REF'}
+    { label: 'Dinheiro', value: 'MON' },
+    { label: 'Cartão de Débito', value: 'DEB' },
+    { label: 'Cartão Refeição', value: 'REF' },
+    { label: 'Cartão de Crédito', value: 'CRED' }
   ]
 
   constructor(private orderService: OrderService,
-              private router: Router,
-              private formBuilder: FormBuilder) { }
+    private router: Router,
+    private formBuilder: FormBuilder) { }
 
   ngOnInit() {
     this.orderForm = this.formBuilder.group({
@@ -40,18 +45,21 @@ export class OrderComponent implements OnInit {
       address: this.formBuilder.control('', [Validators.required, Validators.minLength(5)]),
       number: this.formBuilder.control('', [Validators.required, Validators.pattern(this.numberPattern)]),
       optionalAddress: this.formBuilder.control(''),
-      paymentOption: this.formBuilder.control('', [Validators.required])
-    }, {validator: OrderComponent.equalsTo})
+      paymentOption: this.formBuilder.control('', [Validators.required]),
+      creditCardName: this.formBuilder.control('', [Validators.required, Validators.minLength(5)]),
+      creditCardCVC: this.formBuilder.control(''),
+      creditCardExpiration: this.formBuilder.control('', [Validators.required, Validators.pattern(this.creditCardExpirationPattern)])
+    }, { validator: OrderComponent.equalsTo })
   }
 
-  static equalsTo(group: AbstractControl): {[key:string]: boolean} {
+  static equalsTo(group: AbstractControl): { [key: string]: boolean } {
     const email = group.get('email')
     const emailConfirmation = group.get('emailConfirmation')
-    if(!email || !emailConfirmation){
+    if (!email || !emailConfirmation) {
       return undefined
     }
-    if(email.value !== emailConfirmation.value){
-      return {emailsNotMatch:true}
+    if (email.value !== emailConfirmation.value) {
+      return { emailsNotMatch: true }
     }
     return undefined
   }
@@ -64,26 +72,39 @@ export class OrderComponent implements OnInit {
     return this.orderService.cartItems()
   }
 
-  increaseQty(item: CartItem){
+  increaseQty(item: CartItem) {
     this.orderService.increaseQty(item)
   }
 
-  decreaseQty(item: CartItem){
+  decreaseQty(item: CartItem) {
     this.orderService.decreaseQty(item)
   }
 
-  remove(item: CartItem){
+  remove(item: CartItem) {
     this.orderService.remove(item)
   }
 
-  checkOrder(order: Order){
+  onPaymentTypeChange(selectedOption: string): void {
+    //Se selecionou cartão de crédito, devemos exibir opções do cartão
+    this.showCreditCardForm = (selectedOption === 'CRED');
+  }
+
+  checkOrder(order: Order) {
     order.orderItems = this.cartItems()
-      .map((item:CartItem)=>new OrderItem(item.quantity, item.menuItem.id))
+      .map((item: CartItem) => new OrderItem(item.quantity, item.menuItem.id));
+
+      //Validar pagamento do tipo de cartão de crédito
+      if (order.paymentOption !== 'CRED'){
+        order.creditCardName = '';
+        order.creditCardExpiration = '';
+        order.creditCardCVC = '';
+      }
+
     this.orderService.checkOrder(order)
-      .subscribe( (orderId: string) => {
+      .subscribe((orderId: string) => {
         this.router.navigate(['/order-summary'])
         this.orderService.clear()
-    })
+      })
     console.log(order)
   }
 
